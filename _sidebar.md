@@ -7,6 +7,7 @@
 * 二、Spring Framework
 
   * [走近Spring](/zh-cn/02-spring.md)
+  * [Spring核心](/zh-cn/02-spring-core.md)
 
 * 三、Spring Boot
 
