@@ -2,7 +2,7 @@
 
 ![icon](http://spring.panshenlian.com/_media/icon200.png)
 
-> 一本聚合全球优秀Spring框架内容的共创文档。
+> 一本聚合优质Spring框架内容的共创文档。
 
 # 概述
 
