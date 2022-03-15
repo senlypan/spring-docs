@@ -7,7 +7,8 @@
 * 二、Spring Framework
 
   * [走近Spring](/zh-cn/02-spring.md)
-  * [Spring核心](/zh-cn/02-spring-core.md)
+  * [一文读懂Java动态代理](/zh-cn/02-java-dynamic-proxy.md)
+  * [一文读懂Spring](/zh-cn/02-spring-core.md)
 
 * 三、Spring Boot
 

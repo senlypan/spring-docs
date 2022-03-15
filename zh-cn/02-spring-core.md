@@ -1,21 +1,15 @@
-# Spring核心
+# 一文读懂Spring
 
 > 作者: 潘深练
 >
 > 更新: 2022-03-14
 
 
-## 关于框架
+## 关于概念
 
 对于程序员来说，我们通常知道很多概念，例如组件、模块、系统、框架、架构等。
 
-- **组件**
-
-- **模块**
-
 - **框架**，本质上是一些实用经验集合。即是前辈们在实际开发过程中积攒下来的实战经验，累积成一套实用工具，避免你在开发过程中重复去造轮子，特别是帮你把日常中能遇到的场景或问题都给屏蔽掉，框架的意义在于屏蔽掉开发的基础复杂度、屏蔽掉此类共性的东西，让框架使用者只关注于差异面，即业务层面的实现。简而言之，框架只干一件事，那就是 **简化开发**。然后在此基础上，可能会再考虑一些安全性、效率、性能、弹性、管理、拓展、解耦等等。
-
-- **系统**
 
 - **架构**，是我们关注的系统层面的一个顶层结构。
 
@@ -105,22 +99,21 @@ Bean管理本身就是在做解耦，解除耦合，这个解耦指 Bean 和 Bea
 
 ## AOP
 
-AOP（`Aspect Oriented Programming`的缩写）就是面向切面编程，通过预编译方式和运行期间动态代理实现程序功能的统一维护的一种技术。一般有两类实现方式：
+AOP（`Aspect Oriented Programming`的缩写）就是面向切面编程，通过 **预编译** 方式和运行期间 **动态代理** 实现程序功能的统一维护的一种技术。一般有两类实现方式：
 
 - **命令式编程** ，new一个代理类，在方法前后做一些增强逻辑，此种实现相对复杂，但是灵活性最高。
 - **声明式编程+注解** ， spring大部分是此种实现，很大程度上为了简化，实际使用居多。
 
 ```java
+// 示例01-声明式编程+注解
 // 第一次延迟1秒后执行，之后按fixedRate的规则每5秒再执行一次
 @Scheduled(InitialDelay=1000, fixedRate=5000) 
-```
 
-```java
+// 示例02-声明式编程+注解
 @Cacheable(name="book",key="#isbn",conditional="xxx",allEntries=true,beforeInvocation=true)
-public Book findBook(ISBN isbn,boolean checkWarehouse,boolean includeUsed)
-```
+public Book findBook(ISBN isbn,boolean checkWarehouse,boolean includeUsed) 
 
-```java
+// 示例03-声明式编程+注解
 // 针对某个方法不开启事务
 @Transactional(propagation=Propagation.NOT_SUPPORTED) 
 ```
