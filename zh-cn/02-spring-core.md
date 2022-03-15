@@ -101,8 +101,8 @@ Bean管理本身就是在做解耦，解除耦合，这个解耦指 Bean 和 Bea
 
 AOP（`Aspect Oriented Programming`的缩写）就是面向切面编程，通过 **预编译** 方式和运行期间 **动态代理** 实现程序功能的统一维护的一种技术。一般有两类实现方式：
 
-- **命令式编程** ，new一个代理类，在方法前后做一些增强逻辑，此种实现相对复杂，但是灵活性最高。
-- **声明式编程+注解** ， spring大部分是此种实现，很大程度上为了简化，实际使用居多。
+- **命令式编程** ，new一个代理类，在方法前后做一些增强逻辑，此种实现相对耦合，但是灵活性最高.
+- **声明式编程+注解** ， spring大部分是此种实现，很大程度上为了简化、解耦，实际使用居多。
 
 ```java
 // 示例01-声明式编程+注解
@@ -126,56 +126,157 @@ public Book findBook(ISBN isbn,boolean checkWarehouse,boolean includeUsed)
 - 记录日志，在方法执行前后记录系统操作日志。
 - 工作流系统，工作流系统需要将业务代码和流程引擎代码混合在一起执行，那么我们可以使用AOP将其分离，并动态挂接业务。
 - 权限验证，方法执行前验证是否有权限执行当前方法，没有则抛出没有权限执行异常，有业务代码捕捉。
+- 等等
 
-之前我们说 `IoC` 的实现靠反射，而`AOP`又是如何实现？
+**前面我们说 `IoC` 的实现靠反射，然后解耦，那 `AOP` 靠啥实现？**
 
 ![02-spring-core-004](../_media/image/02-spring-core/02-spring-core-004.png)
 
-`AOP`，简单来说就是给对象增加一些功能，而 Java 给我们预留了哪些口，让我们织入这些增强功能呢？
+`AOP`，简单来说就是给对象增加一些功能，那我们得看 Java 给我们预留了哪些口或者在哪些阶段，允许我们去织入某些增强功能？
 
-- 编译期 lombok，mapstruct（编译期通过pluggable annotation processing 修改的）
-- 字节码加载前 javasist ,  java.lang.instrument<ClassFileTransformer> （很多agent都这么搞）
-- 字节码加载后 jdk proxy, cglib+ASM（操纵）
+- **编译期** 
+    - 原理：在 javac 编译之前注入源代码，源代码被编译之后的字节码自然会包含这部分注入的逻辑。
+	- 代表作如：lombok, mapstruct（编译期通过`pluggable annotation processing API` 修改的）。
 
+- **字节码加载前** 
+    - 原理：字节码要经过 classloader（[类加载器](http://jvm.panshenlian.com/#/zh-cn/06-class-loader)）加载，那我们可以通过 [自定义类加载器](http://jvm.panshenlian.com/#/zh-cn/06-define-class-loader) 的方式，在字节码被自定义类加载器 `加载前` 给它修改掉。
+	- 代表作如：javasist, java.lang.instrument ,ASM（操纵字节码）。
+	- 许多agent如 `Skywaking`, `Arthas` 都是这么搞，注意区分`静态agent` 与`动态agent`。
+	- `JVMTI`是`JVM`提供操作`native`方法的工具，`Instrument`就是提供给你操纵`JVMTI`的java接口，详情见 [java.lang.instrument.Instrumentation](https://docs.oracle.com/javase/8/docs/api/java/lang/instrument/package-summary.html)
+
+- **字节码加载后**
+    - 原理：字节码被类加载器加载后，动态构建字节码文件生成目标类的 **子类**，将切面逻辑加入到子类中。
+	- 代表作如：jdk proxy, cglib。
+
+
+> 按照类别分类，基本可以理解为：
+
+
+|类别|机制|原理|优点|缺点|
+|----|----|----|----|----|
+|静态AOP|静态织入|在编译期，切面以源代码的形式添加到目标方法前后|对系统无性能影响|灵活度不够|
+|动态AOP|[动态代理](http://spring.panshenlian.com/#/zh-cn/02-java-dynamic-proxy)|在运行期，目标类加载后，为接口动态生成代理类，将切面织入到代理类中|相对于静态AOP更加灵活|切入的关注点需要实现接口，对系统有一点性能影响|
+|动态字节码生成|在运行期，目标类加载后，动态构建字节码文件生成目标类的 **子类**，将切面逻辑加入到子类中|-|没有接口也可以织入|扩展类的实例方法为final时，则无法进行织入。性能基本是最差的，因为需要生成子类嵌套一层，spring就是这么搞的，所以性能比较差|
+|自定义类加载器|在字节码被自定义类加载器 `加载前`，将切面逻辑加到目标字节码里|例如阿里的Pandora|可以对绝大部分类进行织入|代码中如果使用了其他类加载器，则这些类将不会被织入|
+|字节码转换|在运行期，所有类加载器加载字节码前，进行拦截|可以对所有类进行织入|-|-|
+
+
+**当然**，理论上是越早织入，性能越好，像`lombok`,`mapstruct`这类静态AOP，基本在编译期之前都修改完，所以性能很好，但是灵活性方面当然会比较差，获取不到运行时的一些信息情况，所以需要权衡比较。
+
+### 简单说明5种类别：
+
+> 1、静态AOP
+
+发生在**编译期**，通过 `Pluggable Annotation Processing API` 修改源码。 
+
+![02-spring-core-005](../_media/image/02-spring-core/02-spring-core-005.png)
+
+在 javac 进行编译的时候，会根据源代码生成抽象语法树（AST），而 java 通过开放 `Pluggable Annotation Processing API` 允许你参与修改源代码，最终生成字节码。典型的代表就是 `lombok`。
+
+![02-spring-core-006](../_media/image/02-spring-core/02-spring-core-006.png)
+
+
+> 2、动态AOP
+
+[动态代理](http://spring.panshenlian.com/#/zh-cn/02-java-dynamic-proxy)，发生在**字节码加载后**，类、方法已经都被加载到方法区中了。
+
+![02-spring-core-009](../_media/image/02-spring-core/02-spring-core-009.png)
+
+典型的代表就是 `JDK Proxy`。
+
+![02-spring-core-010](../_media/image/02-spring-core/02-spring-core-010.png)
+
+其中代理实现 `InvocationHandler` 接口，最终实现逻辑在 `invoke` 方法中。生成代理类之后，只要目标对象的方法被调用了，都会优先进入代理类 `invoke` 方法，进行增强验证等行为。
+
+![02-spring-core-011](../_media/image/02-spring-core/02-spring-core-011.png)
+
+当然动态代理相对也是性能差，毕竟也多走了一层代理，每多走一层就肯定是越难以优化。
+
+> 3、动态字节码生成
+
+发生在**字节码加载后**，类、方法同样已经都被加载到方法区中了。
+
+![02-spring-core-012](../_media/image/02-spring-core/02-spring-core-012.png)
+
+典型的代表就是 `Cglib`（底层也是基于ASM操作字节码）， `Cglib` 底层是基于 `ASM` 进行字节码文件操作的。
+
+![02-spring-core-013](../_media/image/02-spring-core/02-spring-core-013.png)
+
+`Spring` 默认采取的`动态代理`机制实现`AOP`，当动态代理不可用时（代理类无接口）会使用`CGlib`机制，缺点是：
+
+1. 只能对方法进行切入，不能对接口、字段、static静态代码块、private私有方法进行切入。
+
+2. 同类中的互相调用方法将不会使用代理类。因为要使用代理类必须从Spring容器中获取Bean。同类中的互相调用方法是通过 `this` 关键字来调用，`spring` 基本无法去修改 `jvm` 里面的逻辑。
+
+3. 使用 `CGlib` 无法对 final 类进行代理，因为无法生成子类了。
+
+> 4、自定义类加载器
  
+在类加载到JVM之前直接修改某些类的 **方法**，并将 **切入逻辑** 织入到这个方法里，然后将修改后的字节码文件交给虚拟机运行。
 
+![02-spring-core-007](../_media/image/02-spring-core/02-spring-core-007.png)
 
+典型的代表就是 `javasist`，它可以获得指定方法名的方法、执行前后插入代码逻辑。
 
+![02-spring-core-008](../_media/image/02-spring-core/02-spring-core-008.png)
 
+> 5、字节码转换
 
+也是发生在 **字节码加载前**，`Java 1.5` 开始提供的 `Instrumentation API` 。`Instrumentation API` 就像是 `JVM` 预先放置的后门，它可以拦截在JVM上运行的程序，修改字节码。
 
+这种方式是 Java API 天然提供的，在 `java.lang.instrumentation` ，就算 `javasist` 也是基于此实现。
 
+一个代理实现 `ClassFileTransformer` 接口用于改变运行时的字节码（`class File`），这个改变发生在 `jvm` 加载这个类之前，对所有的类加载器有效。`class File` 这个术语定义于虚拟机规范`3.1`，指的是字节码的 `byte` 数组，而不是文件系统中的 `class` 文件。接口中只有一个方法：
 
+```java
+byte[]
+    transform(  ClassLoader         loader,
+                String              className,
+                Class<?>            classBeingRedefined,
+                ProtectionDomain    protectionDomain,
+                byte[]              classfileBuffer)
+        throws IllegalClassFormatException;
 
+// 把 classBeingRedefined 重定义之后再交还回去
+```
 
+`ClassFileTransformer` 需要添加到 `Instrumentation` 实例中才能生效。
 
+## 安全点使用
 
+当对 JVM 中的字节码进行修改的时候，虚拟机也会通知所有线程通过安全点的方式停下来，因为修改会影响到类结构。
 
+## 启动流程
 
-- AOP 类别 （约早织入，性能越好，但是灵活性等方面当然也会差些，权衡比较）
-	- 静态AOP（编译期）
-	- 动态AOP
-	- 动态字节码生成
-	- 自定义类加载器
-	- 字节码转换 
+![02-spring-core-014](../_media/image/02-spring-core/02-spring-core-014.png)
 
-- spring aop
-	- 因为用了cglib，没法切final（因为没法生成子类）
-	- 没法切static ,private，类内方法ab方法互调也没法切等
+Bean生命周期管理，基本从无到有（IoC），从有到增强（AOP）。
 
-（修改class，安全点也会通知所有线程停下来，因为要改类结构了呢）
-？？？思考 ：spring为什么要采用cglib
-### spring 就等于 反射（为了AOP和***） +字节码增强（为了简化和声明式编程）
+任何Bean在Spring容器中只有三种形态，**定义**、**实例**、**增强**。 
 
-### bean --> 从无到有，到增强
+从Bean定义信息观察，通过 `xml` 定义 **bean关系**，`properties`、`yaml`、`json`定义 **属性**，bean关系和属性就构成Bean的定义，其中`BeanDefinitionReader`负责扫描定义信息生成Bean定义对象 `BeanDefinition`。在此基础上，允许对 `BeanDefinition` 定义进行增强（Mybatis与Spring存在很多使用场景）。  
 
-### 三级缓存，说白了对应bean的生命周期三种形态
+Bean定义完成之后，开始通过反射实例化对象、填充属性等，同时又再次预留了很多增强的口，最终生成一个完整的对象。
+
+### 实例化流程与三级缓存 
+
+从定义到扩展，然后反射实例化，到增强，每种状态都会存在引用。
+
+所以Spring设计 **三级缓存**，说白了是对应存储Bean生命周期的三种形态:
+
 - 定义
 - 实例
 - 增强
 
+![02-spring-core-015](../_media/image/02-spring-core/02-spring-core-015.png) 
 
+## 总结
 
+> Spring 就是 **反射** + **字节码增强**
+
+- 反射，为了IoC和 **解耦**
+
+- 字节码增强，为了 **简化** 和声明式编程
 
 （本篇完）
 
