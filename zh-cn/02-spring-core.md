@@ -99,26 +99,17 @@ Bean管理本身就是在做解耦，解除耦合，这个解耦指 Bean 和 Bea
 
 ## AOP
 
-AOP（`Aspect Oriented Programming`的缩写）就是面向切面编程，通过 **预编译** 方式和运行期间 **动态代理** 实现程序功能的统一维护的一种技术。一般有两类实现方式：
+AOP全名`Aspect-Oriented Programming`，中文直译为面向切面(方面)编程，当前已经成为一种比较成熟的编程思想，可以用来很好的解决应用系统中分布于各个模块的交叉关注点问题。在轻量级的J2EE中应用开发中，使用AOP来灵活处理一些具有**横切性质**的系统级服务，如事务处理、安全检查、缓存、对象池管理等，已经成为一种非常适用的解决方案。 
 
-- **命令式编程** ，new一个代理类，在方法前后做一些增强逻辑，此种实现相对耦合，但是灵活性最高.
-- **声明式编程+注解** ， spring大部分是此种实现，很大程度上为了简化、解耦，实际使用居多。
+> 为什么需要AOP
 
-```java
-// 示例01-声明式编程+注解
-// 第一次延迟1秒后执行，之后按fixedRate的规则每5秒再执行一次
-@Scheduled(InitialDelay=1000, fixedRate=5000) 
+当我们要进行一些日志记录、权限控制、性能统计等时，在传统应用程序当中我们可能在需要的对象或方法中进行，而且比如权限控制、性能统计大部分是重复的，这样代码中就存在大量重复代码，即使有人说我把通用部分提取出来，那必然存在调用还是存在重复，像性能统计我们可能只是在必要时才进行，在诊断完毕后要删除这些代码；还有日志记录，比如记录一些方法访问日志、数据访问日志等等，这些都会渗透到各个要访问方法中；还有权限控制，必须在方法执行开始进行审核，想想这些是多么可怕而且是多么无聊的工作。如果采用Spring，这些日志记录、权限控制、性能统计从业务逻辑中分离出来，通过Spring支持的面向切面编程，在需要这些功能的地方动态添加这些功能，无需渗透到各个需要的方法或对象中；有人可能说了，我们可以使用“代理设计模式”或“包装器设计模式”，你可以使用这些，但还是需要通过编程方式来创建代理对象，还是要耦合这些代理对象，而采用Spring 面向切面编程能提供一种更好的方式来完成上述功能，一般通过配置方式，而且不需要在现有代码中添加任何额外代码，现有代码专注业务逻辑。
 
-// 示例02-声明式编程+注解
-@Cacheable(name="book",key="#isbn",conditional="xxx",allEntries=true,beforeInvocation=true)
-public Book findBook(ISBN isbn,boolean checkWarehouse,boolean includeUsed) 
+所以，**Spring AOP面向切面编程能帮助我们无耦合的实现日志记录，性能统计，安全控制**。
 
-// 示例03-声明式编程+注解
-// 针对某个方法不开启事务
-@Transactional(propagation=Propagation.NOT_SUPPORTED) 
-```
+AOP主要是它以横截面的方式插入到主流程中。
 
-> AOP 功能增强
+> AOP能做什么
 
 - 性能监控，在方法调用前后记录调用时间，方法执行太长或超时报警。
 - 缓存代理，缓存某方法的返回值，下次执行该方法时，直接从缓存里获取。
@@ -128,42 +119,48 @@ public Book findBook(ISBN isbn,boolean checkWarehouse,boolean includeUsed)
 - 权限验证，方法执行前验证是否有权限执行当前方法，没有则抛出没有权限执行异常，有业务代码捕捉。
 - 等等
 
-**前面我们说 `IoC` 的实现靠反射，然后解耦，那 `AOP` 靠啥实现？**
+AOP其实就是从中划分出来了一个切面，然后在这个切面里面插入一些“增强”，最后产生一个增加了新功能的代理对象，注意，是代理对象，这是Spring AOP实现的基础。这个代理对象只不过比原始对象（Bean）多了一些功能而已，比如Bean预处理，Bean后处理，异常处理等。 AOP代理的目的就是将切面织入到目标对象。 
 
-![02-spring-core-004](../_media/image/02-spring-core/02-spring-core-004.png)
+> AOP如何实现
+
+**前面我们说 `IoC` 的实现靠反射，然后解耦，那 `AOP` 靠啥实现？** 
 
 `AOP`，简单来说就是给对象增加一些功能，那我们得看 Java 给我们预留了哪些口或者在哪些阶段，允许我们去织入某些增强功能？
 
+我们可以从几个层面来实现AOP。
+
+![02-spring-core-004](../_media/image/02-spring-core/02-spring-core-004.png)  
+
 - **编译期** 
-    - 原理：在 javac 编译之前注入源代码，源代码被编译之后的字节码自然会包含这部分注入的逻辑。
+    - 原理：在编译器编译之前注入源代码，源代码被编译之后的字节码自然会包含这部分注入的逻辑。
 	- 代表作如：lombok, mapstruct（编译期通过`pluggable annotation processing API` 修改的）。
 
-- **字节码加载前** 
+- **运行期，字节码加载前** 
     - 原理：字节码要经过 classloader（[类加载器](http://jvm.panshenlian.com/#/zh-cn/06-class-loader)）加载，那我们可以通过 [自定义类加载器](http://jvm.panshenlian.com/#/zh-cn/06-define-class-loader) 的方式，在字节码被自定义类加载器 `加载前` 给它修改掉。
 	- 代表作如：javasist, java.lang.instrument ,ASM（操纵字节码）。
 	- 许多agent如 `Skywaking`, `Arthas` 都是这么搞，注意区分`静态agent` 与`动态agent`。
 	- `JVMTI`是`JVM`提供操作`native`方法的工具，`Instrument`就是提供给你操纵`JVMTI`的java接口，详情见 [java.lang.instrument.Instrumentation](https://docs.oracle.com/javase/8/docs/api/java/lang/instrument/package-summary.html)
 
-- **字节码加载后**
+- **运行期，字节码加载后**
     - 原理：字节码被类加载器加载后，动态构建字节码文件生成目标类的 **子类**，将切面逻辑加入到子类中。
-	- 代表作如：jdk proxy, cglib。
-
+	- 代表作如：jdk proxy, cglib。 
 
 > 按照类别分类，基本可以理解为：
 
-
-|类别|机制|原理|优点|缺点|
-|----|----|----|----|----|
-|静态AOP|静态织入|在编译期，切面以源代码的形式添加到目标方法前后|对系统无性能影响|灵活度不够|
-|动态AOP|[动态代理](http://spring.panshenlian.com/#/zh-cn/02-java-dynamic-proxy)|在运行期，目标类加载后，为接口动态生成代理类，将切面织入到代理类中|相对于静态AOP更加灵活|切入的关注点需要实现接口，对系统有一点性能影响|
-|动态字节码生成|在运行期，目标类加载后，动态构建字节码文件生成目标类的 **子类**，将切面逻辑加入到子类中|-|没有接口也可以织入|扩展类的实例方法为final时，则无法进行织入。性能基本是最差的，因为需要生成子类嵌套一层，spring就是这么搞的，所以性能比较差|
-|自定义类加载器|在字节码被自定义类加载器 `加载前`，将切面逻辑加到目标字节码里|例如阿里的Pandora|可以对绝大部分类进行织入|代码中如果使用了其他类加载器，则这些类将不会被织入|
-|字节码转换|在运行期，所有类加载器加载字节码前，进行拦截|可以对所有类进行织入|-|-|
-
+|类别|原理|优点|缺点|
+|----|----|----|----|
+|静态AOP|`在编译期`，切面直接以字节码的形式编译到目标字节码文件中|对系统无性能影响|灵活度不够|
+|动态AOP|`在运行期`，目标类加载后，为接口动态生成代理类，将切面织入到代理类中|[动态代理](http://spring.panshenlian.com/#/zh-cn/02-java-dynamic-proxy)方式，相对于静态AOP更加灵活|切入的关注点需要实现接口，对系统有一点性能影响|
+|动态字节码生成|`在运行期`，目标类加载后，动态构建字节码文件生成目标类的 **子类**，将切面逻辑加入到子类中|没有接口也可以织入|扩展类的实例方法为final时，则无法进行织入。性能基本是最差的，因为需要生成子类嵌套一层，spring用的cglib就是这么搞的，所以性能比较差|
+|自定义类加载器|`在运行期`，在字节码被自定义类加载器加载前，将切面逻辑加到目标字节码里，例如阿里的Pandora|可以对绝大部分类进行织入|代码中如果使用了其他类加载器，则这些类将不会被织入|
+|字节码转换|`在运行期`，所有类加载器加载字节码前，进行拦截|可以对所有类进行织入|-|
 
 **当然**，理论上是越早织入，性能越好，像`lombok`,`mapstruct`这类静态AOP，基本在编译期之前都修改完，所以性能很好，但是灵活性方面当然会比较差，获取不到运行时的一些信息情况，所以需要权衡比较。
 
 ### 简单说明5种类别：
+
+<iframe id="embed_dom" name="embed_dom" frameborder="0" style="display:block;width:100%; height:250px;" src="https://www.processon.com/embed/62333d1ce0b34d074452eec2"></iframe>
+
 
 > 1、静态AOP
 
@@ -176,9 +173,9 @@ public Book findBook(ISBN isbn,boolean checkWarehouse,boolean includeUsed)
 ![02-spring-core-006](../_media/image/02-spring-core/02-spring-core-006.png)
 
 
-> 2、动态AOP
+> 2、动态AOP （[动态代理](http://spring.panshenlian.com/#/zh-cn/02-java-dynamic-proxy)）
 
-[动态代理](http://spring.panshenlian.com/#/zh-cn/02-java-dynamic-proxy)，发生在**字节码加载后**，类、方法已经都被加载到方法区中了。
+发生在**运行期**，于**字节码加载后**，类、方法已经都被加载到方法区中了。
 
 ![02-spring-core-009](../_media/image/02-spring-core/02-spring-core-009.png)
 
@@ -192,17 +189,68 @@ public Book findBook(ISBN isbn,boolean checkWarehouse,boolean includeUsed)
 
 当然动态代理相对也是性能差，毕竟也多走了一层代理，每多走一层就肯定是越难以优化。
 
+虽然，动态代理在运行期通过接口动态生成代理类，这为其带来了一定的灵活性，但这个灵活性却带来了两个问题：
+
+1. 第一代理类必须实现一个接口，如果没实现接口会抛出一个异常。
+2. 第二性能影响，因为动态代理使用反射的机制实现的，首先反射肯定比直接调用要慢，经过测试大概每个代理类比静态代理多出10几毫秒的消耗。其次使用反射大量生成类文件可能引起`Full GC`造成性能影响，因为字节码文件加载后会存放在JVM运行时区的方法区（或者叫持久代，`JDK1.8`之后已经在元空间）中，当方法区满的时候，会引起`Full GC`，所以当你大量使用动态代理时，可以将持久代设置大一些，减少`Full GC`次数。
+
+关于动态代理的详细原理和流程，推荐阅读[《一文读懂Java动态代理》](http://spring.panshenlian.com/#/zh-cn/02-java-dynamic-proxy)。
+
 > 3、动态字节码生成
 
-发生在**字节码加载后**，类、方法同样已经都被加载到方法区中了。
+发生在**运行期**，于**字节码加载后**，生成目标类的子类，将切面逻辑加入到子类中，所以使用Cglib实现AOP不需要基于接口。
+
+此时类、方法同样已经都被加载到方法区中了。
 
 ![02-spring-core-012](../_media/image/02-spring-core/02-spring-core-012.png)
 
-典型的代表就是 `Cglib`（底层也是基于ASM操作字节码）， `Cglib` 底层是基于 `ASM` 进行字节码文件操作的。
+典型的代表就是 `Cglib`（底层也是基于ASM操作字节码）， `Cglib`是一个强大的,高性能的`Code`生成类库，它可以在运行期间扩展Java类和实现Java接口，它封装了`Asm`，所以使用`Cglib`前需要引入`Asm`的jar。
 
-![02-spring-core-013](../_media/image/02-spring-core/02-spring-core-013.png)
+```java
+public static void main(String[] args) {   
+        byteCodeGe();   
+    }   
+  
+    /**  
+     * 动态字节码生成  
+     */  
+    public static void byteCodeGe() {   
+        //创建一个织入器   
+        Enhancer enhancer = new Enhancer();   
+        //设置父类   
+        enhancer.setSuperclass(Business.class);   
+        //设置需要织入的逻辑   
+        enhancer.setCallback(new LogIntercept());   
+        //使用织入器创建子类   
+        IBusiness2 newBusiness = (IBusiness2) enhancer.create();   
+        newBusiness.doSomeThing2();   
+    }   
+  
+    /**  
+     * 记录日志  
+     */   
+    public static class LogIntercept implements MethodInterceptor {   
+  
+        @Override   
+        public Object intercept(
+			Object target, 
+			Method method, 
+			Object[] args, 
+			MethodProxy proxy) throws Throwable {   
+            
+			//执行原有逻辑，注意这里是invokeSuper   
+            Object rev = proxy.invokeSuper(target, args);   
+            //执行织入的日志   
+            if (method.getName().equals("doSomeThing")) {   
+                System.out.println("recordLog");   
+            }   
+            return rev;   
+        }   
+    }  
+```
 
-`Spring` 默认采取的`动态代理`机制实现`AOP`，当动态代理不可用时（代理类无接口）会使用`CGlib`机制，缺点是：
+
+`Spring` 默认采取`JDK 动态代理`机制实现`AOP`，当动态代理不可用时（代理类无接口）会使用`CGlib`机制，缺点是：
 
 1. 只能对方法进行切入，不能对接口、字段、static静态代码块、private私有方法进行切入。
 
@@ -212,25 +260,91 @@ public Book findBook(ISBN isbn,boolean checkWarehouse,boolean includeUsed)
 
 > 4、自定义类加载器
  
-在类加载到JVM之前直接修改某些类的 **方法**，并将 **切入逻辑** 织入到这个方法里，然后将修改后的字节码文件交给虚拟机运行。
+发生在**运行期**，于**字节码加载前**，在类加载到JVM之前直接修改某些类的 **方法**，并将 **切入逻辑** 织入到这个方法里，然后将修改后的字节码文件交给虚拟机运行。
 
 ![02-spring-core-007](../_media/image/02-spring-core/02-spring-core-007.png)
 
-典型的代表就是 `javasist`，它可以获得指定方法名的方法、执行前后插入代码逻辑。
+典型的代表就是 `javasist`，它可以获得指定方法名的方法、执行前后插入代码逻辑。 
 
-![02-spring-core-008](../_media/image/02-spring-core/02-spring-core-008.png)
+Javassist是一个编辑字节码的框架，可以让你很简单地操作字节码。它可以在运行期定义或修改Class。使用Javassist实现AOP的原理是在字节码加载前直接修改需要切入的方法。这比使用Cglib实现AOP更加高效，并且没太多限制，实现原理如下图：
+
+![02-spring-core-016](../_media/image/02-spring-core/02-spring-core-016.jpg)
+
+我们使用系统类加载器启动我们自定义的类加载器，在这个类加载器里加一个类加载监听器，监听器发现目标类被加载时就织入切入逻辑，我们再看看使用Javassist实现AOP的代码：
+
+```java
+
+// 启动自定义的类加载器
+
+//获取存放CtClass的容器ClassPool   
+ClassPool cp = ClassPool.getDefault();   
+//创建一个类加载器   
+Loader cl = new Loader();   
+//增加一个转换器   
+cl.addTranslator(cp, new MyTranslator());   
+//启动MyTranslator的main函数   
+cl.run("jsvassist.JavassistAopDemo$MyTranslator", args); 
+
+```
+
+```java
+
+// 类加载监听器
+
+public static class MyTranslator implements Translator {   
+  
+	public void start(ClassPool pool) throws 
+				NotFoundException, CannotCompileException {   
+	}   
+
+	/* *  
+		* 类装载到JVM前进行代码织入  
+		*/   
+	public void onLoad(ClassPool pool, String classname) {   
+		if (!"model$Business".equals(classname)) {   
+			return;   
+		}   
+		//通过获取类文件   
+		try {   
+			CtClass  cc = pool.get(classname);   
+			//获得指定方法名的方法   
+			CtMethod m = cc.getDeclaredMethod("doSomeThing");   
+			//在方法执行前插入代码   
+			m.insertBefore("{ System.out.println(\"recordLog\"); }");   
+		} catch (NotFoundException e) {   
+		} catch (CannotCompileException e) {   
+		}   
+	}   
+
+	public static void main(String[] args) {   
+		Business b = new Business();   
+		b.doSomeThing2();   
+		b.doSomeThing();   
+	}   
+} 
+```
+
+`CtClass`是一个class文件的抽象描述。也可以使用`insertAfter()`在方法的末尾插入代码，或者使用`insertAt()`在指定行插入代码。
+
+使用自定义的类加载器实现AOP在性能上要优于动态代理和Cglib，因为它不会产生新类，但是它仍然存在一个问题，就是如果其他的类加载器来加载类的话，这些类将不会被拦截。
 
 > 5、字节码转换
 
-也是发生在 **字节码加载前**，`Java 1.5` 开始提供的 `Instrumentation API` 。`Instrumentation API` 就像是 `JVM` 预先放置的后门，它可以拦截在JVM上运行的程序，修改字节码。
+自定义的类加载器实现AOP只能拦截自己加载的字节码，那么有没有一种方式能够监控所有类加载器加载字节码呢？有，使用Instrumentation，它是 `Java 5` 提供的新特性，使用 `Instrumentation`，开发者可以构建一个字节码转换器，在字节码加载前进行转换。
+
+发生在**运行期**，于**字节码加载前**，`Java 1.5` 开始提供的 `Instrumentation API` 。`Instrumentation API` 就像是 `JVM` 预先放置的后门，它可以拦截在JVM上运行的程序，修改字节码。
 
 这种方式是 Java API 天然提供的，在 `java.lang.instrumentation` ，就算 `javasist` 也是基于此实现。
 
 一个代理实现 `ClassFileTransformer` 接口用于改变运行时的字节码（`class File`），这个改变发生在 `jvm` 加载这个类之前，对所有的类加载器有效。`class File` 这个术语定义于虚拟机规范`3.1`，指的是字节码的 `byte` 数组，而不是文件系统中的 `class` 文件。接口中只有一个方法：
 
 ```java
-byte[]
-    transform(  ClassLoader         loader,
+	/**  
+     * 字节码加载到虚拟机前会进入这个方法  
+     */   
+    @Override   
+    public byte[] transform(  
+		        ClassLoader         loader,
                 String              className,
                 Class<?>            classBeingRedefined,
                 ProtectionDomain    protectionDomain,
@@ -277,6 +391,13 @@ Bean定义完成之后，开始通过反射实例化对象、填充属性等，�
 - 反射，为了IoC和 **解耦**
 
 - 字节码增强，为了 **简化** 和声明式编程
+
+## 参考
+
+- [控制反转](https://baike.baidu.com/item/%E6%8E%A7%E5%88%B6%E5%8F%8D%E8%BD%AC)
+- [AOP的实现机制](https://www.iteye.com/topic/1116696)
+- [Spring AOP总结](https://www.jianshu.com/p/41632f76dd62)
+- [javaAgent、ASM、javassist、ByteBuddy是什么？](https://zhuanlan.zhihu.com/p/448871215)
 
 （本篇完）
 
