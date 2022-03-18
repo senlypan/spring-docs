@@ -1,4 +1,4 @@
-# 一文读懂Spring
+# 一文读懂Spring本质
 
 > 作者: 潘深练
 >
@@ -394,10 +394,20 @@ Bean定义完成之后，开始通过反射实例化对象、填充属性等，�
 
 ## 参考
 
+- [Understanding Java Agents](https://dzone.com/articles/java-agent-1)
+- [Java 1.5-java.lang.instrument](https://docs.oracle.com/javase/1.5.0/docs/api/java/lang/instrument/package-summary.html)
+- [ASM 字节码插桩](https://www.jianshu.com/p/26e9f410235f)
+- [arthas](https://github.com/alibaba/arthas)
+- [ASM](https://asm.ow2.io/)
+- [cglib](https://github.com/cglib/cglib)
+- [javassist](http://www.javassist.org/)
+- [Javassist/ASM Audit Log](https://jse.readthedocs.io/en/latest/jdk8/javassistLog.html)
+- [bytebuddy tutorial](https://bytebuddy.net/#/tutorial)
+- [Performance Comparison of cglib, Javassist, JDK Proxy and Byte Buddy](https://www.jrebel.com/blog/java-code-generation-libraries-comparison)
 - [控制反转](https://baike.baidu.com/item/%E6%8E%A7%E5%88%B6%E5%8F%8D%E8%BD%AC)
-- [AOP的实现机制](https://www.iteye.com/topic/1116696)
-- [Spring AOP总结](https://www.jianshu.com/p/41632f76dd62)
-- [javaAgent、ASM、javassist、ByteBuddy是什么？](https://zhuanlan.zhihu.com/p/448871215)
+- [AOP 的实现机制](https://www.iteye.com/topic/1116696)
+- [Spring AOP 总结](https://www.jianshu.com/p/41632f76dd62)
+- [javaAgent、ASM、javassist、ByteBuddy 是什么？](https://zhuanlan.zhihu.com/p/448871215)
 
 （本篇完）
 

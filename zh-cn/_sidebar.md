@@ -8,7 +8,7 @@
 
   * [走近Spring](/zh-cn/02-spring.md)
   * [一文读懂Java动态代理](/zh-cn/02-java-dynamic-proxy.md)
-  * [一文读懂Spring](/zh-cn/02-spring-core.md)
+  * [一文读懂Spring本质](/zh-cn/02-spring-core.md)
 
 * 三、Spring Boot
 
