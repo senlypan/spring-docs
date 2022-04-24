@@ -83,9 +83,22 @@ Bean管理本身就是在做解耦，解除耦合，这个解耦指 Bean 和 Bea
 
 ## 反射 
 
-![02-spring-core-002](../_media/image/02-spring-core/02-spring-core-002.png)
+了解反射相关类以及含义：
 
-![02-spring-core-003](../_media/image/02-spring-core/02-spring-core-003.png)
+- **java.lang.Class：** 代表整个字节码。代表一个类型，代表整个类。
+- **java.lang.reflect.Method：** 代表字节码中的方法字节码。代表类中的方法。
+- **java.lang.reflect.Constructor：** 代表字节码中的构造方法字节码。代表类中的构造方法。
+- **java.lang.reflect.Field：** 代表字节码中的属性字节码。代表类中的成员变量（静态变量+实例变量）。
+
+```java
+package java.lang.reflect;
+
+public interface Type{
+
+    default String getTypeName(){return toString();}
+}
+```
+
 
 `java.lang.reflect` 包提供了许多反射类，用于获取或设置实例对象。简单来说，反射能够：
 
@@ -166,9 +179,21 @@ AOP其实就是从中划分出来了一个切面，然后在这个切面里面�
 
 发生在**编译期**，通过 `Pluggable Annotation Processing API` 修改源码。 
 
-![02-spring-core-005](../_media/image/02-spring-core/02-spring-core-005.png)
+![02-spring-core-005](../_media/image/02-spring-core/02-spring-core-005.jpg)
 
 在 javac 进行编译的时候，会根据源代码生成抽象语法树（AST），而 java 通过开放 `Pluggable Annotation Processing API` 允许你参与修改源代码，最终生成字节码。典型的代表就是 `lombok`。
+
+```java
+@Override
+public boolean process(Set<? extends TypeElement> set, RoundEnvironment roundEnvironment) {
+    StringBuilder builder = new StringBuild()
+        .append("package aboutjava.annotion; \n\n")
+
+        // TODO
+
+}
+
+```
 
 ![02-spring-core-006](../_media/image/02-spring-core/02-spring-core-006.png)
 
