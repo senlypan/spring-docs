@@ -1,5 +1,7 @@
 # 一文读懂Spring本质
 
+![访问统计](https://visitor-badge.glitch.me/badge?page_id=senlypan.spring.02-spring-core&left_color=blue&right_color=red)
+
 > 作者: 潘深练
 >
 > 更新: 2022-03-14
