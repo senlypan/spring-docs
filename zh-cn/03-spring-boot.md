@@ -51,21 +51,37 @@ Spring Boot的Starter是一组依赖库的集合，它们被打包为一个单�
 
 以下是自定义Spring Boot Starter的步骤：
 
-定义Starter的名称和作用域：在项目的根目录下创建一个名为spring-boot-starter-{name}的模块，其中{name}是你自定义Starter的名称。该模块的作用域应该是provided，因为它不包含实现，只是用于管理依赖关系。
+1、定义Starter的名称和作用域：在项目的根目录下创建一个名为spring-boot-starter-{name}的模块，其中{name}是你自定义Starter的名称。该模块的作用域应该是provided，因为它不包含实现，只是用于管理依赖关系。
 
-添加依赖：在Starter模块的pom.xml文件中，添加需要引入的依赖。这些依赖应该是一组相关的依赖，例如某个特定的库或组件。
+2、添加依赖：在Starter模块的pom.xml文件中，添加需要引入的依赖。这些依赖应该是一组相关的依赖，例如某个特定的库或组件。
 
-添加自动配置：在Starter模块中添加一个spring.factories文件，指定自动配置类的全限定名。这些自动配置类应该定义了如何自动配置需要引入的依赖。
+3、添加自动配置：在Starter模块中添加一个spring.factories文件，指定自动配置类的全限定名。这些自动配置类应该定义了如何自动配置需要引入的依赖。
 
-添加文档说明：添加一个README文件或者其他文档，说明该Starter的使用方式、提供的功能和限制等信息。
+4、添加文档说明：添加一个README文件或者其他文档，说明该Starter的使用方式、提供的功能和限制等信息。
 
-安装Starter到本地仓库：在Starter模块的根目录下运行mvn install命令，将该Starter安装到本地仓库。
+5、安装Starter到本地仓库：在Starter模块的根目录下运行mvn install命令，将该Starter安装到本地仓库。
 
-在应用程序中使用Starter：在应用程序的pom.xml文件中，添加自定义的Starter依赖。Spring Boot会自动将Starter中定义的依赖引入到应用程序中，并根据自动配置类自动配置相关组件。
+6、在应用程序中使用Starter：在应用程序的pom.xml文件中，添加自定义的Starter依赖。Spring Boot会自动将Starter中定义的依赖引入到应用程序中，并根据自动配置类自动配置相关组件。
 
 通过以上步骤，我们可以创建自己的Spring Boot Starter，并在应用程序中使用。自定义Starter可以使得应用程序更加模块化，提高应用程序的可维护性和可扩展性。
 
-## 四、springboot执行流程
+## 四、springboot启动流程
+
+Spring Boot 是一个基于 Spring 框架的开发框架，其启动流程主要包括以下几个步骤：
+
+1、加载配置文件：Spring Boot 启动时会加载项目中的配置文件，如 application.properties 或 application.yml 等，这些文件包含了应用程序的配置信息，如数据库连接信息、端口号等。
+
+2、创建 Spring 应用上下文：Spring Boot 会创建一个 Spring 应用上下文，用于管理所有的 Bean。Spring 应用上下文可以通过注解或者 XML 文件来定义。
+
+3、扫描注册 Bean：Spring Boot 会扫描项目中的包，查找带有特定注解的类，并将它们注册为 Bean。默认情况下，Spring Boot 会扫描启动类所在的包以及其子包。
+
+4、自动装配：Spring Boot 会自动装配 Bean，将它们注入到需要的地方。自动装配是 Spring Boot 的一个重要特性，它可以大大减少配置工作。
+
+5、运行应用程序：Spring Boot 会启动嵌入式的 Tomcat 服务器，并将应用程序部署到服务器上，从而使应用程序可以响应请求。
+
+总的来说，Spring Boot 的启动流程可以归纳为加载配置文件、创建应用上下文、扫描注册 Bean、自动装配和运行应用程序等步骤。这些步骤是自动化的，让开发者可以更加专注于业务逻辑的开发，从而提高开发效率。
+
+## 五、springboot执行流程
 
 Spring Boot应用程序的执行流程可以大致分为以下几个步骤：
 
@@ -75,7 +91,7 @@ Spring Boot应用程序的执行流程可以大致分为以下几个步骤：
 
 2、执行CommandLineRunner和ApplicationRunner
 
-Spring Boot提供了CommandLineRunner和ApplicationRunner接口，可以在应用程序启动后执行一些初始化操作。这些接口的实现类会被自动加载并执行。
+Spring Boot提供了CommandLineRunner和ApplicationRunner接口，可以在应用程序启动后执行一些初始化操作。这些接口的实现类会被自动加载并执行（run方法）。
 
 3、启动Web服务器
 
@@ -95,3 +111,87 @@ Controller处理完请求后，会返回一个响应结果。Spring Boot会将�
 
 总的来说，Spring Boot应用程序的执行流程包括加载应用程序上下文、执行初始化操作、启动Web服务器、处理和响应请求以及关闭应用程序上下文等步骤。这些步骤都是通过Spring Boot的自动配置机制和约定大于配置的设计思想来实现的，可以大大简化应用程序的开发和部署工作。
 
+## 六、SmartLifecycle  和 CommandLineRunner 的区别？
+
+SmartLifecycle 和 CommandLineRunner 都是 Spring 框架中的接口，用于在应用启动时执行一些初始化操作。它们的区别在于：
+
+- 生命周期控制方式不同
+
+SmartLifecycle 接口提供了更细粒度的生命周期控制方式，可以通过实现 isRunning() 方法返回组件当前是否处于运行状态，Spring 容器会根据返回值来判断是否执行 start() 或 stop() 方法。
+
+而 CommandLineRunner 接口没有生命周期控制方式，只能在应用启动时执行一次，无法做到类似 SmartLifecycle 中的运行状态控制。
+
+- 方法签名不同
+
+SmartLifecycle 接口中定义了 start()、stop()、isRunning() 和 getPhase() 方法，需要实现这些方法，才能完成相应的功能。
+
+CommandLineRunner 接口只有一个 run() 方法，需要实现这个方法，才能完成初始化操作。
+
+- 初始化方式不同
+
+SmartLifecycle 接口的初始化是在 Spring 容器启动时自动注册并执行，无需手动调用。
+
+而 CommandLineRunner 接口需要手动在 Spring 容器启动后调用，或者通过 SpringApplication.run() 方法的参数来指定。
+
+总的来说，SmartLifecycle 和 CommandLineRunner 都可以用于在应用启动时执行一些初始化操作，但是 SmartLifecycle 提供了更细粒度的生命周期控制方式，可以根据组件的运行状态来控制启动和停止时的操作，适用于需要长期运行的任务；而 CommandLineRunner 适用于只需要在应用启动时执行一次的任务。
+
+> Apollo 配置组件就可以通过创建了一个 ConfigChangeListener 的 bean，用于监听配置变化，再创建了一个 ApolloRefreshInitializer 的 bean，它实现了 SmartLifecycle 接口的 bean，在应用启动时注册 ConfigChangeListener，并在应用关闭时取消注册。这样就可以实现在 apollo 配置发生变化时，ConfigChangeListener 会自动执行刷新操作。
+
+例如：
+
+```java
+@Configuration
+public class ApolloConfig {
+
+    @Bean
+    public ConfigChangeListener configChangeListener() {
+        return changeEvent -> {
+            // 配置发生变化，执行刷新操作
+            // ...
+        };
+    }
+
+    @Bean
+    public ApolloRefreshInitializer apolloRefreshInitializer(
+        ConfigChangeListener configChangeListener) {
+        return new ApolloRefreshInitializer(configChangeListener);
+    }
+
+}
+```
+
+## 七、SpringBoot中application和bootstrap配置文件的区别
+
+在Spring Boot框架中，application和bootstrap指的是不同的配置文件，它们的加载顺序也有所不同。
+
+bootstrap配置文件是Spring Boot框架用来配置 **系统级别** 的属性的文件，例如日志的级别、加密算法、SSL证书等。bootstrap文件是在Spring Boot启动时 **最先加载** 的配置文件，因为它需要先配置系统级别的属性，以便后续的操作可以正确地执行。
+
+application配置文件则是用来配置 **应用程序级别** 的属性，例如数据库连接、服务器端口等。application配置文件会在bootstrap配置文件加载之后加载，因为它需要依赖bootstrap配置文件中的一些系统级别的属性来正确地配置应用程序级别的属性。
+
+在Spring Boot中，默认情况下，bootstrap文件应该被命名为bootstrap.properties或bootstrap.yml，并且放置在类路径根目录下。而application文件则应该被命名为application.properties或application.yml，同样放置在类路径根目录下。如果需要自定义bootstrap或application文件的位置，可以在启动时通过spring.config.name和spring.config.location属性来指定。
+
+总之，在Spring Boot框架中，bootstrap文件是最先加载的配置文件，用来配置系统级别的属性，而application文件是在bootstrap文件加载之后加载的，用来配置应用程序级别的属性。这种加载顺序可以确保系统级别的属性先被正确配置，以便后续的操作可以正确执行。
+
+
+1、加载顺序
+
+- bootstrap.yml（bootstrap.properties）先加载
+- application.yml（application.properties）后加载
+
+2、二者不同
+
+跟 application 相比，bootstrap 配置文件具有以下几个特性：
+
+- bootstrap 由父 ApplicationContext 加载，比 application 优先加载
+- bootstrap 里面的属性不能被覆盖
+
+3、应用场景
+
+- application：
+    - 主要用于 springboot 项目的自动化配置
+- bootstrap：
+    - 使用spring Cloud config 配置中心时，这时需要在bootstrap 配置文件中添加连接到配置中心的配置属性来加载外部配置中心的配置信息
+    - 一些固定的不能被覆盖的配置
+    - 一些加密/解密的场景
+
+> 注意：一旦 bootStrap 被加载，则内容不会被覆盖，即便后期加载的 application 的内容标签与 bootstrap 的标签一致，application 也不会覆盖 bootstrap, 而 application 里面的内容可以动态替换。
