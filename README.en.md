@@ -1,5 +1,7 @@
 # Spring Framework summary document
 
+![访问统计](https://visitor-badge.glitch.me/badge?page_id=senlypan.spring.readme-en&left_color=blue&right_color=red)
+
 ![icon](http://spring.panshenlian.com/_media/icon200.png)
 
 > A co-creation document that aggregates the world's best Spring Framework content.

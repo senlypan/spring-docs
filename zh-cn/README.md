@@ -1,5 +1,7 @@
 # Spring框架学习手册
 
+![访问统计](https://visitor-badge.glitch.me/badge?page_id=senlypan.spring.readme&left_color=blue&right_color=red)
+
 ![icon](http://spring.panshenlian.com/_media/icon200.png)
 
 > 一本聚合优质Spring框架内容的共创文档。

@@ -1,5 +1,7 @@
 # 一文读懂Spring本质
 
+![访问统计](https://visitor-badge.glitch.me/badge?page_id=senlypan.spring.02-spring-core&left_color=blue&right_color=red)
+
 > 作者: 潘深练
 >
 > 更新: 2022-03-14
@@ -456,6 +458,38 @@ Bean定义完成之后，开始通过反射实例化对象、填充属性等，�
 - 增强
 
 ![02-spring-core-015](../_media/image/02-spring-core/02-spring-core-015.png) 
+
+
+## Spring SPI
+
+### spring 系列拓展（内核拓展/bean管理拓展）
+
+- bean 定义
+    - 如 beanfactory
+- bean 实例初始化
+    - 如 factorybean
+- bean 增强 AOP
+    - 如 beanpostprocesser 切面此类
+
+### mvc 系列拓展（请求拓展）
+
+- filter
+- interceptor
+- listener
+
+### boot 系列拓展（功能拓展）
+
+- springfactories
+- autoconfiguration
+- starter
+
+### cloud 系列拓展（分布式拓展）
+
+- 分布式拓展
+    - 如 rpc 注册中心配置中心..
+
+
+
 
 ## 总结
 
